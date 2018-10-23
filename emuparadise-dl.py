@@ -1,49 +1,63 @@
 #!/usr/bin/python3
 
+from helper import print_progress, signal_handler, flatten, tabulate, check_connection
 import argparse
 import requests
 from bs4 import BeautifulSoup
 import sys
-#import urllib
 import signal
 import os
 import re
 import time
 
-def print_progress(iteration, total, prefix='', suffix='', decimals=1, bar_length=100):
-    """
-    Call in a loop to create terminal progress bar
+class Backend:
+    search_url = ""
+    search_params = {}
+    download_url = ""
+    download_params = {}
 
-    @params:
-        iteration   - Required  : current iteration (Int)
-        total       - Required  : total iterations (Int)
-        prefix      - Optional  : prefix string (Str)
-        suffix      - Optional  : suffix string (Str)
-        decimals    - Optional  : positive number of decimals in percent complete (Int)
-        bar_length  - Optional  : character length of bar (Int)
-    """
-    str_format = "{0:." + str(decimals) + "f}"
-    percents = str_format.format(100 * (iteration / float(total)))
-    filled_length = int(round(bar_length * iteration / float(total)))
-    bar = '█' * filled_length + '-' * (bar_length - filled_length)
+class TheEyeBackend(Backend):
+    search_url = "https://the-eye.eu/search"
+    download_url = "https://the-eye.eu"
+    association = {}
 
-    sys.stdout.write('\r%s |%s| %s%s %s' % (prefix, bar, percents, '%', suffix)),
+    def search(query):
+        search_params['s'] = query
+        r = requests.get(search_url, params = search_params)
+        soup = BeautifulSoup(r.text, 'hetml.parser')
+        #roms = [[rom.get('href'),rom.get('href').split('/')[3], rom.text, size] for tr in soup.find_all('tr')[1:] for rom,type,size in zip(*tr.find_all('th'))]
+        for tr in soup.find_all('tr')[1:]:
+            for rom, filetype, size in zip(*tr.find_all('th')):
+                i += 1
+                association[i] = rom.get('href')
+                roms.append([i, rom.text, rom.get('href').split('/')[3], size)
+        return roms
 
-    if iteration == total:
-        sys.stdout.write('\n')
-    sys.stdout.flush()
+    def get_request(gid):
+        return requests.get(download_url + association[gid], params=download_params, stream=True, verify=False, allow_redirects=True)
 
-def signal_handler(sig, frame):
-    sys.stdout.flush()
-    print('You pressed Ctrl+C!')
-    sys.exit(0)
 
-def flatten(items, seqtypes=(list, tuple)):
-    for i, x in enumerate(items):
-        while i < len(items) and isinstance(items[i], seqtypes):
-            items[i:i+1] = items[i]
-    return items
+class EmuparadiseBackend(Backend):
+    search_url = "https://www.emuparadise.me/roms/search.php"
+    download_url = "http://direct.emuparadise.me/roms/get-download.php"
 
+    def search(query):
+        search_params['query'] = query
+        search_params['section'] = "roms"
+        search_params['sysid'] = "0"
+        r = requests.get(search_url, params=search_params)
+        soup = BeautifulSoup(r.text, 'html.parser')
+        rom_box = soup.findAll('div', attrs={'class':'roms'})
+        table = [list(flatten([[rom.find(href=True)['href'].split("/")[-1], [elems.get_text() for elems in rom.findAll('a')], rom.br.contents[5]]])) for rom in rom_box]
+        return table
+
+    def get_request(gid):
+        download_params['gid'] = gid
+        download_params['test'] = 'true'
+        
+        r = requests.get(download_url, params=download_params, stream=True, verify=False, allow_redirects=True)
+        return r
+    
 class CheckAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         if not os.path.isdir(values):
@@ -57,57 +71,45 @@ class CheckAction(argparse.Action):
         else:
             setattr(namespace, self.dest, values)
 
-def tabulate(data, header, max_width=80, align='left'):
-    if not all(map(lambda x: len(x) == len(header), data)):
-        print("sorry, but the table is misbuild!")
-    columns_width = [max([len(str(elem)) for elem in sublst]) for sublst in zip(*data)]
-    print('| ' + ' + '.join(["-" * w for w in columns_width]) + '|')
-    print('| ' + ' | '.join([h + ' ' * (columns_width[i] - len(h)) for i,h in enumerate(header)]) + '|')
-    print('| ' + ' + '.join(["-"*w for w in columns_width]) + '|')
-    for line in data:
-        print('| ' + ' | '.join([str(d) + ' ' * (columns_width[i] - len(str(d))) for i,d in enumerate(line)]) + '|')
-    print('| ' + ' + '.join(["-"*w for w in columns_width]) + '|')
-
 def search_action(args):
-    search_url = "https://www.emuparadise.me/roms/search.php"
-    payload = {}
-    payload['query'] = args.query
-    payload['section'] = "roms"
-    payload['sysid'] = "0"
-    r = requests.get(search_url, params=payload)
-    soup = BeautifulSoup(r.text, 'html.parser')
-    rom_box = soup.findAll('div', attrs={'class':'roms'})
-    table = [list(flatten([[rom.find(href=True)['href'].split("/")[-1], [elems.get_text() for elems in rom.findAll('a')], rom.br.contents[5]]])) for rom in rom_box]
+    backend = backends_dict[args.backend]()
+    table = backend.search(args.query)
     if len(table) == 0:
-        print("Sorry, no results")
+        print("Sorry, no results!")
+        sys.exit(0)
     if args.category != '':
         table = [[ids, name, system, size] for ids, name, system, size in table if re.match(args.category, system, re.IGNORECASE)]
     tabulate(table, ["ID", "Name", "System", "Size"], max_width=args.maxwidth)
 
+    ID = input("Do you want to download something? Enter the ID (multiple ID not yet supported) (N/Ctrl+c to cancel):\t")
+    
+    if (ID in ['n', 'N']):
+        sys.exit(0)
+    try:
+        downloader(int(ID))
+    except:
+        print("ID not understood, sorry.")
     sys.exit(0)
+
+def check_filename(filename):
+    if os.path.exists(filename):
+        print(filename, "already downloaded!\nExiting...")
+        sys.exit(0)
 
 def downloader(gid):
 
-    download_url = "http://direct.emuparadise.me/roms/get-download.php"
-    download_params = {}
-    download_params['gid'] = gid
-    download_params['test'] = 'true'
-    
     c_size = 1024
 
     resume = False
     last_chunk = 0
     dl = 0
     resume_header = None
-    r = requests.head(download_url, params=download_params, allow_redirects=True)
     if (args.output_directory != "") and (args.output_directory[-1] != "/"):
         args.output_directory = args.output_directory + "/"
-    filename = args.output_directory + re.sub('%20', ' ', r.url.split('/')[-1]) #urllib.parse.unquote(r.url.split("/")[-1])
 
-    if os.path.exists(filename):
-        print(filename, "already downloaded!\nExiting...")
-        sys.exit(0)
-
+    r = backend.get_request(gid)
+    filename = re.sub('%20', ' ', r.url.split('/')[-1])
+    check_filename(filename)
     filename_partial = filename + ".partial"
     total_length = r.headers.get('content-length')
     total_length = int(total_length)
@@ -117,6 +119,7 @@ def downloader(gid):
         print("No more space on disk ", filename , " needs ", total_length/(1024*1024), " MB on disk!\nSkipping Download.")
         return
     
+    """
     if os.path.exists(filename_partial):
         dl = os.path.getsize(filename_partial)
         last_chunk = int(dl/c_size)
@@ -126,10 +129,10 @@ def downloader(gid):
         fd = open(filename_partial, 'ab')
         #fd.seek(c_size * last_chunk, 0)
     else:
-        print("Downloading...")
-        fd = open(filename_partial, "wb")
+        """
+    print("Downloading...")
+    fd = open(filename_partial, "wb")
     print_progress(0, total_length, prefix = filename, suffix = 'Speed', bar_length = 50)
-    r = requests.get(download_url, headers=resume_header, params=download_params, stream=True, verify=False, allow_redirects=True)
     speed = 0
     start_time = epoch = time.time()
     KB = 1024
@@ -162,13 +165,6 @@ def download_action(args):
     print("...Done")
     sys.exit(0)
 
-def check_connection():
-    try:
-        requests.head("http://google.com", allow_redirects=True)
-        return True
-    except :
-        return False
-
 signal.signal(signal.SIGINT, signal_handler)
 if not check_connection():
     print("Sorry, no internet connection available")
@@ -183,18 +179,30 @@ all links have been disabled.
 To use the tool first search for something, than start the download providing
 as input the correct ID for the rom you wish to have.
 """
+
+backends = {
+        "emuparadise": EmuparadiseBackend,
+        "the-eye": TheEyeBackend
+            }
+
 parser = argparse.ArgumentParser(description=long_desc)
 subparser = parser.add_subparsers(help='sub-command help')
 
 search = subparser.add_parser('search')#, aliases=['s'])
 search.add_argument('query', help='a quoted string to search, ex. "resident evil"')
+search.add_argument('-b', '--backend', default='emuparadise', help='specify backend to search, by default all are used, to known the list of supported backend do "emuparadise-dl list"')
 search.add_argument('-c', '--category', default='', help='search for a specific system')
 search.add_argument('--maxwidth', type=int, default=80, help='set the maximum width a single column should occupy')
 search.set_defaults(func=search_action)
+
 download = subparser.add_parser('download')#, aliases=['d'])
 download.add_argument('ID', nargs='+', help='ID of the file to download')
 download.add_argument('-u', '--url', help='provide url of the file to download instead of ID', action='store_true')
 download.add_argument('-o', '--output-directory', default='', help='select destination directory', action=CheckAction)
 download.set_defaults(func=download_action)
+
+listing = subparser.add_parser('list')
+listing.set_defaults(func=lambda x: print("Available backends: ", ",".join(backends.keys())))
+
 args = parser.parse_args()
 args.func(args)

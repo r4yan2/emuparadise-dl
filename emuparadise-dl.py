@@ -7,8 +7,12 @@ from bs4 import BeautifulSoup
 import sys
 import signal
 import os
-import re
 import time
+import json
+
+# Disable InsecureRequestWarning to avoid complaints for some Backend
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 class Backend:
     search_url = ""
@@ -21,42 +25,101 @@ class TheEyeBackend(Backend):
     download_url = "https://the-eye.eu"
     association = {}
 
-    def search(query):
-        search_params['s'] = query
-        r = requests.get(search_url, params = search_params)
-        soup = BeautifulSoup(r.text, 'hetml.parser')
-        #roms = [[rom.get('href'),rom.get('href').split('/')[3], rom.text, size] for tr in soup.find_all('tr')[1:] for rom,type,size in zip(*tr.find_all('th'))]
+    def search(self, query):
+        self.search_params['s'] = query
+        r = requests.get(self.search_url, params = self.search_params)
+        soup = BeautifulSoup(r.text, 'html.parser')
+        i = 0
+        roms = []
         for tr in soup.find_all('tr')[1:]:
-            for rom, filetype, size in zip(*tr.find_all('th')):
-                i += 1
-                association[i] = rom.get('href')
-                roms.append([i, rom.text, rom.get('href').split('/')[3], size)
+            rom, filetype, size = tr.find_all('th')
+            i += 1
+            link = rom.a.get('href')
+            device = link.split('/')[3]
+            name = rom.text
+            size = size.text
+            self.association[i] = requests.utils.quote(link)
+            roms.append([i, name, device, size])
         return roms
 
-    def get_request(gid):
-        return requests.get(download_url + association[gid], params=download_params, stream=True, verify=False, allow_redirects=True)
+    def get_request(self, gid):
+        return requests.get(self.download_url + self.association[gid], params=self.download_params, stream=True, verify=False, allow_redirects=True)
 
 
 class EmuparadiseBackend(Backend):
     search_url = "https://www.emuparadise.me/roms/search.php"
     download_url = "http://direct.emuparadise.me/roms/get-download.php"
 
-    def search(query):
-        search_params['query'] = query
-        search_params['section'] = "roms"
-        search_params['sysid'] = "0"
-        r = requests.get(search_url, params=search_params)
+    def search(self, query):
+        self.search_params['query'] = query
+        self.search_params['section'] = "roms"
+        self.search_params['sysid'] = "0"
+        r = requests.get(self.search_url, params=self.search_params)
         soup = BeautifulSoup(r.text, 'html.parser')
         rom_box = soup.findAll('div', attrs={'class':'roms'})
         table = [list(flatten([[rom.find(href=True)['href'].split("/")[-1], [elems.get_text() for elems in rom.findAll('a')], rom.br.contents[5]]])) for rom in rom_box]
         return table
 
-    def get_request(gid):
-        download_params['gid'] = gid
-        download_params['test'] = 'true'
+    def get_request(self, gid):
+        self.download_params['gid'] = gid
+        self.download_params['test'] = 'true'
         
-        r = requests.get(download_url, params=download_params, stream=True, verify=False, allow_redirects=True)
+        r = requests.get(self.download_url, params=self.download_params, stream=True, verify=False, allow_redirects=True)
         return r
+
+class RomsmaniaBackend(Backend):
+    search_url = "https://romsmania.cc/search"
+    download_url = "https://romsmania.cc/download"
+    association = {}
+
+    def search(self, query):
+        base_url = "https://romsmania.cc"
+        self.search_params['name'] = query
+        r = requests.get(self.search_url, params = self.search_params)
+        soup = BeautifulSoup(r.text, 'html.parser')
+
+        roms = []
+        i = 0
+        for tr in soup.tbody.find_all('tr'):
+            rom, system, rating, downs = tr.find_all('td')
+            i += 1
+            self.association[i] = rom.a.get('href')[len(base_url):]
+            system = system.a.get('href').split('/')[-1]
+            # Unfortunately Size isn't available
+            # while searching so we just display NA
+            roms.append([i, rom.a.text, system, "-NA-"])
+        return roms
+
+    def get_request(self, gid):
+        print(self.download_url + self.association[gid])
+        r = requests.get(self.download_url + self.association[gid])
+        s = BeautifulSoup(r.text, 'html.parser')
+        return requests.get(s.find_all(attrs={"class":"wait__link"})[0].get('href'), allow_redirects=True, verify=False, stream=True)
+
+class DaromsBackend(Backend):
+    search_url = "http://daroms.com/api/search"
+    download_url = "http://bingbong.daroms.com/daroms-gateway.php"
+    association={}
+
+    def search(self, query):
+        self.search_params['params[category]']='false'
+        self.search_params['params[term]']=query
+        r = requests.post(self.search_url, data=self.search_params)
+        roms = []
+        for elem in r.json():
+            filename = elem['filename']
+            size = elem['filesize']
+            ID = int(elem['id'])
+            key = requests.utils.unquote(elem['key'])
+            device = elem['tags']
+            self.association[ID] = key
+            roms.append([ID, filename, device, size])
+        return roms
+
+    def get_request(self, gid):
+        self.download_params['id'] = gid
+        self.download_params['key'] = self.association[gid]
+        return requests.get(self.download_url, params=self.download_params, stream=True, verify=False, allow_redirects=True)
     
 class CheckAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
@@ -72,7 +135,7 @@ class CheckAction(argparse.Action):
             setattr(namespace, self.dest, values)
 
 def search_action(args):
-    backend = backends_dict[args.backend]()
+    backend = backends[args.backend]()
     table = backend.search(args.query)
     if len(table) == 0:
         print("Sorry, no results!")
@@ -86,17 +149,18 @@ def search_action(args):
     if (ID in ['n', 'N']):
         sys.exit(0)
     try:
-        downloader(int(ID))
+        ID = int(ID)
     except:
         print("ID not understood, sorry.")
-    sys.exit(0)
+        sys.exit(0)
+    downloader(backend, int(ID))
 
 def check_filename(filename):
     if os.path.exists(filename):
         print(filename, "already downloaded!\nExiting...")
         sys.exit(0)
 
-def downloader(gid):
+def downloader(backend, gid):
 
     c_size = 1024
 
@@ -108,7 +172,7 @@ def downloader(gid):
         args.output_directory = args.output_directory + "/"
 
     r = backend.get_request(gid)
-    filename = re.sub('%20', ' ', r.url.split('/')[-1])
+    filename = requests.utils.unquote(r.url.split('/')[-1])
     check_filename(filename)
     filename_partial = filename + ".partial"
     total_length = r.headers.get('content-length')
@@ -119,7 +183,6 @@ def downloader(gid):
         print("No more space on disk ", filename , " needs ", total_length/(1024*1024), " MB on disk!\nSkipping Download.")
         return
     
-    """
     if os.path.exists(filename_partial):
         dl = os.path.getsize(filename_partial)
         last_chunk = int(dl/c_size)
@@ -129,9 +192,8 @@ def downloader(gid):
         fd = open(filename_partial, 'ab')
         #fd.seek(c_size * last_chunk, 0)
     else:
-        """
-    print("Downloading...")
-    fd = open(filename_partial, "wb")
+        print("Downloading...")
+        fd = open(filename_partial, "wb")
     print_progress(0, total_length, prefix = filename, suffix = 'Speed', bar_length = 50)
     speed = 0
     start_time = epoch = time.time()
@@ -182,27 +244,30 @@ as input the correct ID for the rom you wish to have.
 
 backends = {
         "emuparadise": EmuparadiseBackend,
-        "the-eye": TheEyeBackend
+        "the-eye": TheEyeBackend,
+        "daroms": DaromsBackend,
+        "romsmania": RomsmaniaBackend
             }
 
 parser = argparse.ArgumentParser(description=long_desc)
 subparser = parser.add_subparsers(help='sub-command help')
 
 search = subparser.add_parser('search')#, aliases=['s'])
-search.add_argument('query', help='a quoted string to search, ex. "resident evil"')
 search.add_argument('-b', '--backend', default='emuparadise', help='specify backend to search, by default all are used, to known the list of supported backend do "emuparadise-dl list"')
 search.add_argument('-c', '--category', default='', help='search for a specific system')
+search.add_argument('-o', '--output-directory', default='', help='select destination directory', action=CheckAction)
 search.add_argument('--maxwidth', type=int, default=80, help='set the maximum width a single column should occupy')
+search.add_argument('query', help='a quoted string to search, ex. "resident evil"')
 search.set_defaults(func=search_action)
 
 download = subparser.add_parser('download')#, aliases=['d'])
-download.add_argument('ID', nargs='+', help='ID of the file to download')
 download.add_argument('-u', '--url', help='provide url of the file to download instead of ID', action='store_true')
 download.add_argument('-o', '--output-directory', default='', help='select destination directory', action=CheckAction)
+download.add_argument('ID', nargs='+', help='ID of the file to download')
 download.set_defaults(func=download_action)
 
 listing = subparser.add_parser('list')
-listing.set_defaults(func=lambda x: print("Available backends: ", ",".join(backends.keys())))
+listing.set_defaults(func=lambda x: print("Available backends: ", ", ".join(backends.keys())))
 
 args = parser.parse_args()
 args.func(args)

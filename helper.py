@@ -48,13 +48,17 @@ def tabulate(data, header, max_width=80, align='left'):
     """
     if not all(map(lambda x: len(x) == len(header), data)):
         print("sorry, but the table is misbuild!")
-    columns_width = [max([len(str(elem)) for elem in sublst]) for sublst in zip(*data)]
-    print('| ' + ' + '.join(["-" * w for w in columns_width]) + '|')
-    print('| ' + ' | '.join([h + ' ' * (columns_width[i] - len(h)) for i,h in enumerate(header)]) + '|')
-    print('| ' + ' + '.join(["-"*w for w in columns_width]) + '|')
+
+    #removing trailing space and stringify data
+
+    data = [[str(elem).strip() for elem in lst] for lst in data]
+    columns_width = [max([len(elem) for elem in sublst] + [len(header[i])]) for i, sublst in enumerate(zip(*data))]
+    print('| ' + ' + '.join(["-" * w for w in columns_width]) + ' |')
+    print('| ' + ' | '.join([h + ' ' * (columns_width[i] - len(h)) for i,h in enumerate(header)]) + ' |')
+    print('| ' + ' + '.join(["-"*w for w in columns_width]) + ' |')
     for line in data:
-        print('| ' + ' | '.join([str(d) + ' ' * (columns_width[i] - len(str(d))) for i,d in enumerate(line)]) + '|')
-    print('| ' + ' + '.join(["-"*w for w in columns_width]) + '|')
+        print('| ' + ' | '.join([d + ' ' * (columns_width[i] - len(d)) for i,d in enumerate(line)]) + ' |')
+    print('| ' + ' + '.join(["-"*w for w in columns_width]) + ' |')
 
 def check_connection():
     """

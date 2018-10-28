@@ -53,12 +53,14 @@ def tabulate(data, header, max_width=80, align='left'):
 
     data = [[str(elem).strip() for elem in lst] for lst in data]
     columns_width = [max([len(elem) for elem in sublst] + [len(header[i])]) for i, sublst in enumerate(zip(*data))]
+    print()
     print('| ' + ' + '.join(["-" * w for w in columns_width]) + ' |')
     print('| ' + ' | '.join([h + ' ' * (columns_width[i] - len(h)) for i,h in enumerate(header)]) + ' |')
     print('| ' + ' + '.join(["-"*w for w in columns_width]) + ' |')
     for line in data:
         print('| ' + ' | '.join([d + ' ' * (columns_width[i] - len(d)) for i,d in enumerate(line)]) + ' |')
     print('| ' + ' + '.join(["-"*w for w in columns_width]) + ' |')
+    print()
 
 def check_connection():
     """

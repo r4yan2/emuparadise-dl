@@ -9,6 +9,7 @@ import signal
 import os
 import time
 import json
+from termcolor import colored
 
 # Disable InsecureRequestWarning to avoid complaints for some Backend
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
@@ -213,7 +214,7 @@ class CheckAction(argparse.Action):
 
 def search_action(args):
     backend = backends[args.backend]()
-    print("Using", backend.base_url, "as backend. Please consider supporting the site!")
+    print("Using", backend.base_url, "as backend.", colored("Please consider supporting the site!", "green"))
     table = backend.search(args.query)
     if len(table) == 0:
         print("Sorry, no results!")
@@ -231,14 +232,14 @@ def search_action(args):
     except:
         print("ID not understood, sorry.")
         sys.exit(0)
-    downloader(backend, int(ID))
+    downloader(backend, ID, data[ID-1][1])
 
 def check_filename(filename):
     if os.path.exists(filename):
         print(filename, "already downloaded!\nExiting...")
         sys.exit(0)
 
-def downloader(backend, gid):
+def downloader(backend, gid, filename):
 
     c_size = 1024
 
@@ -250,7 +251,7 @@ def downloader(backend, gid):
         args.output_directory = args.output_directory + "/"
 
     r = backend.get_request(gid)
-    filename = requests.utils.unquote(r.url.split('/')[-1])
+    #filename = requests.utils.unquote(r.url.split('/')[-1])
     check_filename(filename)
     filename_partial = filename + ".partial"
     total_length = r.headers.get('content-length')

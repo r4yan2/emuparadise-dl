@@ -15,12 +15,14 @@ from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 class Backend:
+    base_url = ""
     search_url = ""
     search_params = {}
     download_url = ""
     download_params = {}
 
 class TheEyeBackend(Backend):
+    base_url = "https://the-eye.eu"
     search_url = "https://the-eye.eu/search"
     download_url = "https://the-eye.eu"
     association = {}
@@ -47,6 +49,7 @@ class TheEyeBackend(Backend):
 
 
 class EmuparadiseBackend(Backend):
+    base_url = "https://www.emuparadise.me"
     search_url = "https://www.emuparadise.me/roms/search.php"
     download_url = "http://direct.emuparadise.me/roms/get-download.php"
 
@@ -68,6 +71,7 @@ class EmuparadiseBackend(Backend):
         return r
 
 class RomsmaniaBackend(Backend):
+    base_url = "https://romsmania.cc"
     search_url = "https://romsmania.cc/search"
     download_url = "https://romsmania.cc/download"
     association = {}
@@ -97,6 +101,7 @@ class RomsmaniaBackend(Backend):
         return requests.get(s.find_all(attrs={"class":"wait__link"})[0].get('href'), allow_redirects=True, verify=False, stream=True)
 
 class DaromsBackend(Backend):
+    base_url = "http://daroms.com"
     search_url = "http://daroms.com/api/search"
     download_url = "http://bingbong.daroms.com/daroms-gateway.php"
     association={}
@@ -136,15 +141,16 @@ class CheckAction(argparse.Action):
 
 def search_action(args):
     backend = backends[args.backend]()
+    print("Using", backend.base_url, "as backend. Please consider supporting the site!")
     table = backend.search(args.query)
     if len(table) == 0:
         print("Sorry, no results!")
         sys.exit(0)
     if args.category != '':
-        table = [[ids, name, system, size] for ids, name, system, size in table if re.match(args.category, system, re.IGNORECASE)]
+        table = [[ids, name, system, size] for ids, name, system, size in table if args.category in system]
     tabulate(table, ["ID", "Name", "System", "Size"], max_width=args.maxwidth)
 
-    ID = input("Do you want to download something? Enter the ID (multiple ID not yet supported) (N/Ctrl+c to cancel):\t")
+    ID = input("Do you want to download something? Enter the ID (multiple ID not supported) (N/Ctrl+c to cancel):\t")
     
     if (ID in ['n', 'N']):
         sys.exit(0)

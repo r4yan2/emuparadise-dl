@@ -125,6 +125,78 @@ class DaromsBackend(Backend):
         self.download_params['id'] = gid
         self.download_params['key'] = self.association[gid]
         return requests.get(self.download_url, params=self.download_params, stream=True, verify=False, allow_redirects=True)
+
+class DoperomBackend(Backend):
+    base_url = "https://www.doperoms.com"
+    search_url = "https://www.doperoms.com/search.php"
+    download_url = "http://doperoms.com:8080/files/"
+    association = {}
+
+    def search(self, query):
+        self.search_params['s'] = query
+        r = requests.get(self.search_url, params=self.search_params, headers={'Accept-Encoding': 'identity'})
+        s = BeautifulSoup(r.text, 'html.parser')
+
+        i = 0
+        roms = []
+        for td in s.find_all('td', attrs={'height':'40'}):
+            i += 1
+
+            link = td.find_all('a')[-1].get('href').split('.html')[0]
+            name = td.find_all('a')[-1].text
+            device = td.b.text
+            self.association[i] = link
+            roms.append([i, name, device, "-NA-"])
+        return roms
+
+    def get_request(self, gid):
+        return requests.get(self.download_url + self.association[gid], stream=True, allow_redirects=True, verify=False, headers={'Accept-Encoding': 'identity'})
+
+class RomulationBackend(Backend):
+    base_url = "https://www.romulation.net"
+    search_url = "/roms/search"
+    association = {}
+
+    def search(self, query):
+        self.search_params['query'] = query
+        r = requests.get(self.base_url + self.search_url, params=self.search_params)
+        s = BeautifulSoup(r.text, 'html.parser')
+
+        i = 0
+        roms = []
+        for tr in s.tbody.find_all('tr')[1:]:
+            region, rom, downs, size = tr.find_all('td')
+            
+            link = rom.a.get('href')
+            device = rom.text[rom.text.find("[")+1:rom.text.find("]")]
+            rom = rom.text[len(device)+3:]
+
+            reason = "" 
+            if len(size.find_all('i', attrs={'class': 'locked'})) > 0:
+                reason = "is locked for guest users"
+
+            size = size.text.strip()
+            checksize = float(size.split(' ')[0])
+
+            if ((size[-2] == 'G') or ((size[-2] == 'M') and (checksize > 200))):
+                reason = "maximum size allowed for guest users is 200M"
+            
+            if reason != "":
+                print(colored("Omitting", "red"), rom, "because", reason)
+                continue
+            i += 1
+            self.association[i] = link
+            roms.append([i, rom, device, size])
+        return roms
+
+    def get_request(self, id):
+        r = requests.get(self.base_url + self.association[id])
+        s = BeautifulSoup(r.text, 'html.parser')
+        link = s.find('a', attrs={'class':'btn-yellow'}).get('href')
+        r = requests.get(self.base_url + link)
+        s = BeautifulSoup(r.text, 'html.parser')
+        link = s.find('a', attrs={'class':'btn-yellow'}).get('href')
+        return requests.get(link, allow_redirects=True, stream=True, verify=False)
     
 class CheckAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
@@ -252,7 +324,9 @@ backends = {
         "emuparadise": EmuparadiseBackend,
         "the-eye": TheEyeBackend,
         "daroms": DaromsBackend,
-        "romsmania": RomsmaniaBackend
+        "romsmania": RomsmaniaBackend,
+        "doperom": DoperomBackend,
+        "romulation": RomulationBackend
             }
 
 parser = argparse.ArgumentParser(description=long_desc)

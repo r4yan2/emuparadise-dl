@@ -16,7 +16,13 @@ Basic Usage
 emuparadise-dl search "Metal Gear Solid"
 ```
 
+![](screenshots/simple_search.png)
+
+![](screenshots/simple_search_with_download.png)
+
 It will search using the search function provided by the site and It will report back the found results in a tabular format. You will be prompted to insert the ID (first column) of the rom to retrieve (or just type N to abort).
+
+![](screenshots/all_search.png)
 
 To known the list of supported backend just type
 
@@ -24,7 +30,7 @@ To known the list of supported backend just type
 emuparadise-dl list
 ```
 
-By default it uses emuparadise.me as backend, it is possible to use a different one or to search on all the avaliable backend at once, but I suggest of doing so only  for very rare titles since the output could be very long for common roms 
+By default it uses emuparadise.me as backend, it is possible to use a different one or to search on all the avaliable backend at once, but I suggest of doing so only for very rare titles since the output could be very long for common roms 
 
 The program is equipped with a well functioning help manual (provided by the godly argparse python library).
 For the general help type ```emuparadise-dl -h```. 

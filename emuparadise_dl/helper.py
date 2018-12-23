@@ -24,18 +24,13 @@ def print_progress(iteration, total, prefix='', suffix='', decimals=1, bar_lengt
         sys.stdout.write('\n')
     sys.stdout.flush()
 
-def signal_handler(sig, frame):
-    sys.stdout.flush()
-    print('You pressed Ctrl+C!')
-    sys.exit(0)
-
 def flatten(items, seqtypes=(list, tuple)):
     for i, x in enumerate(items):
         while i < len(items) and isinstance(items[i], seqtypes):
             items[i:i+1] = items[i]
     return items
 
-def tabulate(data, header, max_width=80, align='left'):
+def tabulate(data, header, max_width=80, title='', align='left'):
     """
     Tabulate list of lists with header
 
@@ -53,13 +48,21 @@ def tabulate(data, header, max_width=80, align='left'):
 
     data = [[str(elem).strip() for elem in lst] for lst in data]
     columns_width = [max([len(elem) for elem in sublst] + [len(header[i])]) for i, sublst in enumerate(zip(*data))]
+    table_width = sum(columns_width)
+    blank_row = '| ' + ' + '.join(["-" * w for w in columns_width]) + ' |'
     print()
+    if (title != ''):
+        print(blank_row)
+        margin = len(blank_row) - 2 - len(title) + 9 #magic number 9 is the surplus len of cyan coloration
+        lmargin = margin // 2
+        rmargin = (margin + 1) // 2
+        print('|' + ' '*lmargin + title + ' '*rmargin + '|')
     print('| ' + ' + '.join(["-" * w for w in columns_width]) + ' |')
     print('| ' + ' | '.join([h + ' ' * (columns_width[i] - len(h)) for i,h in enumerate(header)]) + ' |')
-    print('| ' + ' + '.join(["-"*w for w in columns_width]) + ' |')
+    print(blank_row)
     for line in data:
         print('| ' + ' | '.join([d + ' ' * (columns_width[i] - len(d)) for i,d in enumerate(line)]) + ' |')
-    print('| ' + ' + '.join(["-"*w for w in columns_width]) + ' |')
+    print(blank_row)
     print()
 
 def check_connection():
@@ -74,5 +77,4 @@ def check_connection():
         return True
     except :
         return False
-
 

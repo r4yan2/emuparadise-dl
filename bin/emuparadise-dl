@@ -1,0 +1,75 @@
+#!/usr/bin/env python3
+
+""" emuparadise-dl -- Search and Download roms from a selection of rom-hosting websites.
+    Andrea Grazioso (ray) <grazioandre@gmail.com>
+
+    Based on BeautifulSoup and Requests
+
+    Usage:
+        From the command line: emuparadise-dl -h
+"""
+
+import signal
+import argparse
+from emuparadise_dl.emuparadise_dl import search_action, download_action, backends
+from emuparadise_dl.helper import check_connection
+
+long_desc = """
+emuparadise-dl
+
+Small utility to search and download roms from emuparadise.me now that
+all links have been disabled.
+
+To use the tool first search for something, than start the download providing
+as input the correct ID for the rom you wish to have.
+"""
+
+class CheckAction(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        if not os.path.isdir(values):
+            print("The supplied directory '"+ values +"' does not exists!\nDo you want to create it now? (Y/N)")
+            if sys.stdin in ["y", "Y", "yes", "YES", "porcodio"]:
+                os.mkdir(os.path.expanduser(values))
+                setattr(namespace, self.dest, values)
+            else:
+                print("Ok, directory not created, exiting...")
+                sys.exit(0)
+        else:
+            setattr(namespace, self.dest, values)
+
+def parse_args():
+    parser = argparse.ArgumentParser(description=long_desc)
+    subparser = parser.add_subparsers(help='emuparadise-dl "sub-command" -h display the subcommand help')
+    
+    search = subparser.add_parser('search')#, aliases=['s'])
+    search.add_argument('-b', '--backend', default='emuparadise', help='specify backend to search, by default only emuparadise.me is used, to known the list of supported backend do "emuparadise-dl list"')
+    search.add_argument('-a', '--all', help='use all backend for searching, please note that you should rely on this only if you are searching a very rare rom, since the output for a common rom would be VERY long', action='store_true')
+    search.add_argument('-c', '--category', default='', help='search for a specific system')
+    search.add_argument('-o', '--output-directory', default='', help='select destination directory', action=CheckAction)
+    search.add_argument('--maxwidth', type=int, default=80, help='set the maximum width a single column should occupy')
+    search.add_argument('query', help='a quoted string to search, ex. "resident evil"')
+    search.set_defaults(func=search_action)
+    
+    #download = subparser.add_parser('download')#, aliases=['d'])
+    #download.add_argument('-o', '--output-directory', default='', help='select destination directory', action=CheckAction)
+    #download.add_argument('url', help='url of the rom page to download')
+    #download.set_defaults(func=download_action)
+    
+    listing = subparser.add_parser('list')
+    listing.set_defaults(func=lambda x: print("Available backends: ", ", ".join(backends.keys())))
+    
+    return parser.parse_args()
+
+def signal_handler(sig, frame):
+    sys.stdout.flush()
+    print('You pressed Ctrl+C!')
+    sys.exit(0)
+
+if __name__ == '__main__':
+
+    signal.signal(signal.SIGINT, signal_handler)
+    if not check_connection():
+        print("Sorry, no internet connection available")
+        sys.exit()
+    args = parse_args()
+    args.func(args)

@@ -18,7 +18,7 @@ emuparadise-dl search "Metal Gear Solid"
 
 ![](screenshots/simple_search.png)
 
-![](screenshots/simple_search_with_download.png)
+![](screenshots/simple_search_with_retrieve.png)
 
 It will search using the search function provided by the site and It will report back the found results in a tabular format. You will be prompted to insert the ID (first column) of the rom to retrieve (or just type N to abort).
 

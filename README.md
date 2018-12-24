@@ -28,11 +28,11 @@ To known the list of supported backend just type
 emuparadise-dl list
 ```
 
-By default it uses emuparadise.me as backend, it is possible to use a different one or to search on all the avaliable backend at once, but I suggest of doing so only for very rare titles since the output could be very long for common roms 
+By default it uses emuparadise.me as backend, it is possible to use a different one with ```emuparadise-dl search -b <backend>``` or to search on all the avaliable backend at once with ```emuparadise-dl search --all``` (WARNING: please note that the output could be very long for common roms)
 
 ![](screenshots/all_search.png)
 
-The program is equipped with a well functioning help manual (provided by the godly argparse python library).
+The program have a well functioning help manual (provided by the godly argparse python library).
 For the general help type ```emuparadise-dl -h```. 
 For every subcommand is available the related help section (i.e. ```emuparadise-dl search -h```
 
@@ -44,7 +44,7 @@ A: Ok, I sent you an email, since you didn't reply I supposed you don't mind. Ho
 
 Q: Is this a scraper?
 
-A: NO, it is a TUI search engine for roms, all the content is hosted on the sites, so you sould support the backend you are using
+A: NO, it is a TUI search engine for roms (actually the search function is called on the backend), all the content is hosted on the sites, so you sould support the backend you are using
 
 Q: The name sounds familiar...
 

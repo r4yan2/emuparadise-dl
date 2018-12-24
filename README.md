@@ -2,7 +2,7 @@
 
 emuparadise-dl is a (maybe) helpful script to search and retrieve roms from the top rom-hosting websites out there.
 
-It was originally built because I wanted to access the Emuparadise's site huge database in a faster (and less javascriptish) way, but then I decided to extend the support to more sites. 
+It was originally built because I wanted to access Emuparadise's huge database in a faster (and less javascriptish) way, but then I decided to extend the support to more sites. 
 
 ## Installation
 
@@ -38,9 +38,9 @@ For every subcommand is available the related help section (i.e. ```emuparadise-
 
 ## FAQ
 
-Q: I'm the owner of one of those backend you are supporting and I want you to stop targeting my site.
+Q: I'm the owner of one of those backend supported by emuparadise-dl and I want you to stop supporting my site.
 
-A: Ok, so when I sent you an email asking for permission why didn't you reply? However, send me an email and I'll remove support from future releases
+A: Ok, I sent you an email, since you didn't reply I supposed you don't mind. However, send me an email and I'll remove support from future releases
 
 Q: Is this a scraper?
 

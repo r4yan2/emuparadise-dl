@@ -28,7 +28,6 @@ setup(
     url="https://github.com/r4yan2/emuparadise-dl",   # project home page, if any
     classifiers=[
         "Programming Language :: Python :: 3",
-        "Licence :: OSI Approved :: MIT License",
-        "Operating System :: OS Indipendent"
+        "License :: OSI Approved :: MIT License",
         ]
 )

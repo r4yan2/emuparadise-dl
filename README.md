@@ -22,7 +22,7 @@ It will search using the search function provided by the site and It will report
 
 ![](screenshots/simple_search_with_retrieve.png)
 
-To known the list of supported backend just type
+To know the list of supported backend just type
 
 ```bash
 emuparadise-dl list

@@ -20,11 +20,11 @@ setup(
     # metadata to display on PyPI
     author="Andrea Grazioso (ray)",
     author_email="grazioandre@gmail.com",
-    description="Search and Download roms from hosting website",
+    description="Search and Download from rom hosting websites",
     long_description=long_description,
     long_description_content_type="text/markdown",
     license="MIT",
-    keywords="rom emulator retrogaming",
+    keywords="rom emulators retrogaming",
     url="https://github.com/r4yan2/emuparadise-dl",   # project home page, if any
     classifiers=[
         "Programming Language :: Python :: 3",

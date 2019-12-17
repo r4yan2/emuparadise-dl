@@ -9,6 +9,7 @@
         From the command line: emuparadise-dl -h
 """
 
+import sys
 import signal
 import argparse
 from emuparadise_dl.emuparadise_dl import search_action, download_action, backends
@@ -39,24 +40,13 @@ class CheckAction(argparse.Action):
 
 def parse_args():
     parser = argparse.ArgumentParser(description=long_desc)
-    subparser = parser.add_subparsers(help='emuparadise-dl "sub-command" -h display the subcommand help')
     
-    search = subparser.add_parser('search')#, aliases=['s'])
-    search.add_argument('-b', '--backend', default='emuparadise', help='specify backend to search, by default only emuparadise.me is used, to known the list of supported backend do "emuparadise-dl list"')
-    search.add_argument('-a', '--all', help='use all backend for searching, please note that you should rely on this only if you are searching a very rare rom, since the output for a common rom would be VERY long', action='store_true')
-    search.add_argument('-c', '--category', default='', help='search for a specific system')
-    search.add_argument('-o', '--output-directory', default='', help='select destination directory', action=CheckAction)
-    search.add_argument('--maxwidth', type=int, default=80, help='set the maximum width a single column should occupy')
-    search.add_argument('query', help='a quoted string to search, ex. "resident evil"')
-    search.set_defaults(func=search_action)
-    
-    #download = subparser.add_parser('download')#, aliases=['d'])
-    #download.add_argument('-o', '--output-directory', default='', help='select destination directory', action=CheckAction)
-    #download.add_argument('url', help='url of the rom page to download')
-    #download.set_defaults(func=download_action)
-    
-    listing = subparser.add_parser('list')
-    listing.set_defaults(func=lambda x: print("Available backends: ", ", ".join(backends.keys())))
+    parser.add_argument('-b', '--backend', choices=list(backends.keys()), default='emuparadise', help='specify backend to search, by default only emuparadise.me is used, to known the list of supported backend do "emuparadise-dl list"')
+    parser.add_argument('-a', '--all', help='use all backend for searching, please note that you should rely on this only if you are searching a very rare rom, since the output for a common rom would be VERY long', action='store_true')
+    parser.add_argument('-c', '--category', default='', help='search for a specific system')
+    parser.add_argument('-o', '--output-directory', default='', help='select destination directory', action=CheckAction)
+    parser.add_argument('--maxwidth', type=int, default=80, help='set the maximum width a single column should occupy')
+    parser.add_argument('query', help='a quoted string to search, ex. "resident evil"')
     
     return parser.parse_args()
 
@@ -72,4 +62,4 @@ if __name__ == '__main__':
         print("Sorry, no internet connection available")
         sys.exit()
     args = parse_args()
-    args.func(args)
+    search_action(args)

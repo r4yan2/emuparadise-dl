@@ -2,18 +2,19 @@
 with open("README.md", "r") as fp:
     long_description = fp.read()
 
-from setuptools import setup, find_packages
+from setuptools import setup, find_namespace_packages, find_packages
 setup(
     name="emuparadise-dl",
     version="0.1",
-    packages=['emuparadise_dl'],
+    packages=find_packages(),
     scripts=['bin/emuparadise-dl'],
 
     # Project uses reStructuredText, so ensure that the docutils get
     # installed or upgraded on the target machine
     install_requires=[
         'requests',
-        'bs4',
+        'scrapy',
+        'cryptography',
         'termcolor',
         ],
 

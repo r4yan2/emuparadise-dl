@@ -1,1 +1,1 @@
-from .emuparadise_dl import search_action
+from .emuparadise_dl import EmuparadiseDL

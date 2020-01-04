@@ -12,7 +12,7 @@
 import sys
 import signal
 import argparse
-from emuparadise_dl.emuparadise_dl import search_action, download_action, backends
+from emuparadise_dl.emuparadise_dl import EmuparadiseDL, backends
 from emuparadise_dl.helper import check_connection
 
 long_desc = """
@@ -62,4 +62,5 @@ if __name__ == '__main__':
         print("Sorry, no internet connection available")
         sys.exit()
     args = parse_args()
-    search_action(args)
+    app = EmuparadiseDL()
+    app.search_action(args)

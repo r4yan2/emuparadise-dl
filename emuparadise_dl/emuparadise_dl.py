@@ -363,6 +363,6 @@ backends = {
         "the-eye": TheEyeBackend,
         "daroms": DaromsBackend,
         "romsmania": RomsmaniaBackend,
-        "doperom": DoperomBackend,
-        "romulation": RomulationBackend
+        #"doperom": DoperomBackend,
+        #"romulation": RomulationBackend
             }

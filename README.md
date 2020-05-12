@@ -13,7 +13,7 @@ pip3 install emuparadise-dl
 Basic Usage
 
 ```bash
-emuparadise-dl search "Metal Gear Solid"
+emuparadise-dl "Metal Gear Solid"
 ```
 
 ![](screenshots/simple_search.png)
@@ -22,19 +22,15 @@ It will search using the search function provided by the site and It will report
 
 ![](screenshots/simple_search_with_retrieve.png)
 
-To know the list of supported backend just type
+To know the list of supported backend as well as a full set of options just type
 
 ```bash
-emuparadise-dl list
+emuparadise-dl -h
 ```
 
-By default it uses emuparadise.me as backend, it is possible to use a different one with ```emuparadise-dl search -b <backend>``` or to search on all the avaliable backend at once with ```emuparadise-dl search --all``` (WARNING: please note that the output could be very long for common roms)
+By default it uses emuparadise.me as backend, it is possible to use a different one with ```emuparadise-dl -b <backend>``` or to search on all the avaliable backend at once with ```emuparadise-dl --all``` (WARNING: please note that the output could be very long for common roms)
 
 ![](screenshots/all_search.png)
-
-The program have a well functioning help manual (provided by the godly argparse python library).
-For the general help type ```emuparadise-dl -h```. 
-For every subcommand is available the related help section (i.e. ```emuparadise-dl search -h```
 
 ## FAQ
 

@@ -16,13 +16,18 @@ from emuparadise_dl.emuparadise_dl import search_action, download_action, backen
 from emuparadise_dl.helper import check_connection
 
 long_desc = """
-emuparadise-dl
-
 Small utility to search and download roms from emuparadise.me now that
 all links have been disabled.
 
 To use the tool first search for something, than start the download providing
 as input the correct ID for the rom you wish to have.
+
+Supported backends:
+* emuparadise.me
+* the-eye.eu
+* romsmania.cc
+* daroms.com
+
 """
 
 class CheckAction(argparse.Action):
@@ -39,10 +44,10 @@ class CheckAction(argparse.Action):
             setattr(namespace, self.dest, values)
 
 def parse_args():
-    parser = argparse.ArgumentParser(description=long_desc)
+    parser = argparse.ArgumentParser(description=long_desc, formatter_class=argparse.RawDescriptionHelpFormatter)
     
-    parser.add_argument('-b', '--backend', choices=list(backends.keys()), default='emuparadise', help='specify backend to search, by default only emuparadise.me is used, to known the list of supported backend do "emuparadise-dl list"')
-    parser.add_argument('-a', '--all', help='use all backend for searching, please note that you should rely on this only if you are searching a very rare rom, since the output for a common rom would be VERY long', action='store_true')
+    parser.add_argument('-b', '--backend', choices=list(backends.keys()), default='emuparadise', help='specify backend to search, by default only emuparadise.me is used')
+    parser.add_argument('-a', '--all', help='use all backend for searching, please note that the output for a common rom would be VERY long', action='store_true')
     parser.add_argument('-c', '--category', default='', help='search for a specific system')
     parser.add_argument('-o', '--output-directory', default='', help='select destination directory', action=CheckAction)
     parser.add_argument('--maxwidth', type=int, default=80, help='set the maximum width a single column should occupy')

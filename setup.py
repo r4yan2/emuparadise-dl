@@ -5,7 +5,7 @@ with open("README.md", "r") as fp:
 from setuptools import setup, find_packages
 setup(
     name="emuparadise-dl",
-    version="0.1",
+    version="0.2.1",
     packages=['emuparadise_dl'],
     scripts=['bin/emuparadise-dl'],
 

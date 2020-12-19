@@ -6,22 +6,21 @@ def print_progress(iteration, total, prefix='', suffix='', decimals=1, bar_lengt
     Call in a loop to create terminal progress bar
 
     Parameters:
-        iteration (int) : current iteration
-        total (int) : total iterations
+        iteration (int) : current value
+        total (int) : total value
         prefix (str): prefix string (default '')
         suffix (str) : suffix string (default '')
         decimals (int) : positive number of decimals in percent complete (default 1)
         bar_length (int) : character length of bar (default 100)
     """
-    str_format = "{0:." + str(decimals) + "f}"
-    percents = str_format.format(100 * (iteration / float(total)))
-    filled_length = int(round(bar_length * iteration / float(total)))
-    bar = '█' * filled_length + '-' * (bar_length - filled_length)
-
-    sys.stdout.write('\r%s |%s| %s%s %s' % (prefix, bar, percents, '%', suffix)),
-
-    if iteration == total:
-        sys.stdout.write('\n')
+    if total:
+        str_format = "{0:." + str(decimals) + "f}"
+        percents = str_format.format(100 * (iteration / float(total)))
+        filled_length = int(round(bar_length * iteration / float(total)))
+        bar = '█' * filled_length + '-' * (bar_length - filled_length)
+        sys.stdout.write('\r%s |%s| %s%s %s' % (prefix, bar, percents, '%', suffix))
+    else:
+        sys.stdout.write('\r%s    %s' % (prefix, suffix))
     sys.stdout.flush()
 
 def flatten(items, seqtypes=(list, tuple)):
